@@ -21,7 +21,7 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         return {left: '0px', top: '0px', display: 'none', data: [], selectedOpt: 0,
              cursorPos: 0, query: {}};
     },
-    macher: function(flag, subtext, should_startWithSpace, acceptSpaceBar) {
+    matcher: function(flag, subtext, should_startWithSpace, acceptSpaceBar) {
       var _a, _y, match, regexp, space;
       flag = flag.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
       if (should_startWithSpace) {
@@ -124,7 +124,7 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         data = this.arrayToDefaultHash(data);
         var source = inputorNode.val();
         startStr = source.slice(0, pos);
-        query = this.macher(this.props.flag, startStr, true);
+        query = this.matcher(this.props.flag, startStr, true);
         if (typeof query === "string") {
             var start = pos - query.length;
             var end = start + query.length;
