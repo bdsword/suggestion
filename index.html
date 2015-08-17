@@ -1,0 +1,27 @@
+<html>
+<head>
+    <link href="css/jquery.atwho.css" rel="stylesheet">
+    <link href="css/styles.css" rel="stylesheet">
+    <!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script> -->
+    <script src="react-0.13.3/build/react.js"></script>
+    <script src="react-0.13.3/build/JSXTransformer.js"></script>
+    <script src="js/jquery-2.1.4.js"></script>
+    <script src="js/jquery.atwho.js"></script>
+    <script src="js/jquery.caret.js"></script>
+</head>
+<body>
+    <div id="content"></div>
+    </script>
+
+    <script type="text/jsx" src="components/MentionableTextarea.jsx"></script>
+    <script type="text/jsx" src="components/OptionsBox.jsx"></script>
+
+    <script type="text/jsx">
+        React.render(
+          <MentionableTextarea flag='@' />,
+          document.getElementById('content')
+        );
+    </script>
+
+</body>
+</html>
