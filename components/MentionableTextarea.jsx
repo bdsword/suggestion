@@ -19,7 +19,7 @@ KEY_CODE = {
 var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
     getInitialState: function () {
         return {left: '0px', top: '0px', display: 'none', data: [], selectedOpt: 0,
-             cursorPos: 0, query: {}};
+             cursorPos: 0, flag: '', field: '', query: {}};
     },
     matcher: function(flag, subtext, should_startWithSpace, acceptSpaceBar) {
       var _a, _y, match, regexp, space;
@@ -75,6 +75,9 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
     },
 
     showOptBox: function () {
+        if(this.state.display === 'none'){
+            this.resetOptSelected();
+        }
         this.setState({display: 'block'});
     },
 
@@ -107,8 +110,11 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
 
     handleMention: function (event) {
         if(this.filterKey(event)) return;
-
+        // debugger;
         if(this.state.display === 'none') {
+            this.resetOptSelected();
+        } else if (this.state.display == 'block' && event.hasOwnProperty('keyCode') &&
+        (event.keyCode !== KEY_CODE.DOWN && event.keyCode !== KEY_CODE.UP) ) {
             this.resetOptSelected();
         }
 
@@ -120,25 +126,44 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         this.setState(offset);
         this.setState({cursorPos: pos});
 
-        var data = [{id: 1, name: 'Tom'}, {id: 2, name: 'Peter'}, {id: 3, name: 'Cherry'}]
-        data = this.arrayToDefaultHash(data);
-        var source = inputorNode.val();
-        startStr = source.slice(0, pos);
-        query = this.matcher(this.props.flag, startStr, true);
-        if (typeof query === "string") {
-            var start = pos - query.length;
-            var end = start + query.length;
-            query = {'text': query, 'headPos': start, 'endPos': end};
-            this.setState({query: query});
-            var result = this.filter(query.text, data, 'name');
-            if(result.length > 0){
-                this.setState({data: result});
-                this.showOptBox();
+        var confs = [{flag: '@', field: 'name'}, {flag: '#', field: 'title'}];
+
+        for(var i=0 ; i<confs.length ; i++){
+            var data = [];
+            var conf = confs[i];
+            switch (conf.flag) {
+                case '@':
+                    data = [{id: 1, name: 'Tom'}, {id: 2, name: 'Peter'}, {id: 3, name: 'Cherry'}];
+                    break;
+                case '#':
+                    data = [{id: 1, title: 'Issue 1'}, {id: 2, title: 'Issue 2'}, {id: 3, title: 'Issue 3'}];
+                    break;
+                default:
+                    break;
+            }
+
+            data = this.arrayToDefaultHash(data);
+            var source = inputorNode.val();
+            startStr = source.slice(0, pos);
+            query = this.matcher(conf.flag, startStr, true);
+            if (typeof query === "string") {
+                var start = pos - query.length;
+                var end = start + query.length;
+                query = {'text': query, 'headPos': start, 'endPos': end};
+                this.setState({query: query});
+                var result = this.filter(query.text, data, conf.field);
+                if(result.length > 0){
+                    this.setState({flag: conf.flag});
+                    this.setState({field: conf.field});
+                    this.setState({data: result});
+                    this.showOptBox();
+                    break;
+                } else {
+                    this.hideOptBox();
+                }
             } else {
                 this.hideOptBox();
             }
-        } else {
-            this.hideOptBox();
         }
     },
 
@@ -176,8 +201,8 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
     },
 
     onChoose: function () {
-        var chooseContent = this.state.data[this.state.selectedOpt]['name'];
-        this.insertAtCursor(this.props.flag + chooseContent);
+        var chooseContent = this.state.data[this.state.selectedOpt][this.state.field];
+        this.insertAtCursor(this.state.flag + chooseContent);
     },
 
     insertAtCursor: function (content) {
@@ -185,7 +210,7 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         var source = inputor.val();
         var pos = this.state.cursorPos;
 
-        startStr = source.slice(0, Math.max(this.state.query.headPos - this.props.flag.length, 0));
+        startStr = source.slice(0, Math.max(this.state.query.headPos - this.state.flag.length, 0));
         var suffix = " ";
         content += suffix;
         var text = startStr + content + source.slice(query.endPos || 0);
@@ -209,7 +234,7 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
                     ref="inputor">
 
                 </textarea>
-                <OptionsBox conf={this.state} query={this.state.query.text} />
+                <OptionsBox conf={this.state} query={this.state.query.text} field={this.state.field} />
             </div>
         );
     }
