@@ -110,7 +110,7 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
 
     handleMention: function (event) {
         if(this.filterKey(event)) return;
-        // debugger;
+        
         if(this.state.display === 'none') {
             this.resetOptSelected();
         } else if (this.state.display == 'block' && event.hasOwnProperty('keyCode') &&
@@ -167,11 +167,6 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         }
     },
 
-    handleOnChange: function () {
-        this.setState({selectedOpt: 0});
-        console.log('onChange');
-    },
-
     handleKeyDown: function (event) {
         if(this.state.display !== 'block'){
             return;
@@ -193,7 +188,7 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
                 this.onChoose()
                 break;
             case KEY_CODE.ESC:
-                this.setState({display: 'none'});
+                this.hideOptBox();
                 break;
             default:
                 console.log('non handled keydown');
