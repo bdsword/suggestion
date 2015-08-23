@@ -19,7 +19,7 @@ KEY_CODE = {
 var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
     getInitialState: function () {
         return {left: '0px', top: '0px', display: 'none', data: [], selectedOpt: 0,
-             cursorPos: 0, flag: '', field: '', query: {}};
+             cursorPos: 0, flag: '', search_field: '', insert_field: '', query: {}};
     },
     matcher: function(flag, subtext, should_startWithSpace, acceptSpaceBar) {
       var _a, _y, match, regexp, space;
@@ -136,17 +136,17 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         this.setState(offset);
         this.setState({cursorPos: pos});
 
-        var confs = [{flag: '@', field: 'name'}, {flag: '#', field: 'title'}];
+        var confs = [{flag: '@', search_field: 'name', insert_field: 'name'}, {flag: '#', search_field: 'title', insert_field: 'id'}];
 
         for(var i=0 ; i<confs.length ; i++){
             var data = [];
             var conf = confs[i];
             switch (conf.flag) {
                 case '@':
-                    data = [{id: 1, name: 'Tom'}, {id: 2, name: 'Peter'}, {id: 3, name: 'Cherry'}];
+                    data = [{id: 1, name: 'Tom', insert_field: 'name'}, {id: 2, name: 'Peter', insert_field: 'name'}, {id: 3, name: 'Cherry', insert_field: 'name'}];
                     break;
                 case '#':
-                    data = [{id: 1, title: 'Issue 1'}, {id: 2, title: 'Issue 2'}, {id: 3, title: 'Issue 3'}];
+                    data = [{id: 1, title: 'Issue 1', insert_field: 'id'}, {id: 2, title: 'Issue 2', insert_field: 'id'}, {id: 3, title: 'Issue 3', insert_field: 'id'}];
                     break;
                 default:
                     break;
@@ -161,10 +161,11 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
                 var end = start + query.length;
                 query = {'text': query, 'headPos': start, 'endPos': end};
                 this.setState({query: query});
-                var result = this.filter(query.text, data, conf.field);
+                var result = this.filter(query.text, data, conf.search_field);
                 if(result.length > 0){
                     this.setState({flag: conf.flag});
-                    this.setState({field: conf.field});
+                    this.setState({search_field: conf.search_field});
+                    this.setState({insert_field: conf.insert_field});
                     this.setState({data: result});
                     this.showOptBox();
                     break;
@@ -206,7 +207,7 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
     },
 
     onChoose: function () {
-        var chooseContent = this.state.data[this.state.selectedOpt][this.state.field];
+        var chooseContent = this.state.data[this.state.selectedOpt][this.state.insert_field];
         this.insertAtCursor(this.state.flag + chooseContent);
     },
 
@@ -239,7 +240,7 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
                     ref="inputor">
 
                 </textarea>
-                <OptionsBox conf={this.state} query={this.state.query.text} field={this.state.field} />
+                <OptionsBox conf={this.state} query={this.state.query.text} search_field={this.state.search_field} />
             </div>
         );
     }

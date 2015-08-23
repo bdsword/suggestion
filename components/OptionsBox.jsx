@@ -14,15 +14,15 @@ var OptionsBox = React.createClass({displayName: 'OptionsBox',
         var options = this.props.conf.data;
         var selectedOpt = this.props.conf.selectedOpt;
         var query = this.props.query;
-        var field = this.props.field;
+        var search_field = this.props.search_field;
         return (
             <div style={optionBoxStyle} className="options-box">
                 <ul>
                     {options.map(function(option, index) {
                         if(index === selectedOpt) {
-                            return <li key={option.id} className="selected" dangerouslySetInnerHTML={{__html: this.highlighter(option[field], query)}} />;
+                            return <li key={option.id} className="selected" dangerouslySetInnerHTML={{__html: this.highlighter(option[search_field], query)}} />;
                         } else {
-                            return <li key={option.id} dangerouslySetInnerHTML={{__html: this.highlighter(option[field], query)}} />;
+                            return <li key={option.id} dangerouslySetInnerHTML={{__html: this.highlighter(option[search_field], query)}} />;
                         }
                     }.bind(this))}
                 </ul>
