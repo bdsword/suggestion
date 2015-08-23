@@ -75,7 +75,8 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
     },
 
     showOptBox: function () {
-        if(this.state.display === 'none'){
+        if(!this.isOptBoxVisible()){
+            console.log('here');
             this.resetOptSelected();
         }
         this.setState({display: 'block'});
@@ -99,22 +100,31 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
     filterKey: function (event) {
         switch (event.keyCode) {
             case KEY_CODE.ESC:
-                if(this.state.display === 'none'){
+                if(!this.isOptBoxVisible()){ // because we hide option box in handleKeyDown,
+                                             // we don't want handleMention to show option box again
                     event.preventDefault();
                     return true;
                 }
                 break;
+            case KEY_CODE.DOWN:
+            case KEY_CODE.UP:
+                return true;
         }
         return false;
     },
 
+    isKeyboardEvent: function (event) {
+        return event.hasOwnProperty('keyCode');
+    },
+
+    isOptBoxVisible: function () {
+        return this.state.display === 'block';
+    },
+
     handleMention: function (event) {
         if(this.filterKey(event)) return;
-        
-        if(this.state.display === 'none') {
-            this.resetOptSelected();
-        } else if (this.state.display == 'block' && event.hasOwnProperty('keyCode') &&
-        (event.keyCode !== KEY_CODE.DOWN && event.keyCode !== KEY_CODE.UP) ) {
+
+        if (this.isOptBoxVisible() && this.isKeyboardEvent(event)) {
             this.resetOptSelected();
         }
 
@@ -168,7 +178,7 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
     },
 
     handleKeyDown: function (event) {
-        if(this.state.display !== 'block'){
+        if(!this.isOptBoxVisible()){
             return;
         }
         switch (event.keyCode) {
