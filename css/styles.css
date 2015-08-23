@@ -21,6 +21,10 @@
     padding-right: 10px;
 }
 
+.options-box ul li:hover {
+    cursor: default;
+}
+
 .options-box ul li.selected {
     background-color: #3434ff;
     color: #fff;

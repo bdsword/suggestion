@@ -229,6 +229,10 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         React.findDOMNode(this.refs.inputor).dispatchEvent(event);
     },
 
+    onItemHovered: function (index, event) {
+        this.setState({selectedOpt: index});
+    },
+
     render: function () {
         return (
             <div className="mentionableTextarea">
@@ -240,7 +244,9 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
                     ref="inputor">
 
                 </textarea>
-                <OptionsBox conf={this.state} query={this.state.query.text} searchField={this.state.searchField} />
+                <OptionsBox conf={this.state} query={this.state.query.text} searchField={this.state.searchField}
+                    onItemClicked={this.onChoose}
+                    onItemHovered={this.onItemHovered} />
             </div>
         );
     }
