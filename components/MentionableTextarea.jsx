@@ -19,7 +19,7 @@ KEY_CODE = {
 var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
     getInitialState: function () {
         return {left: '0px', top: '0px', display: 'none', data: [], selectedOpt: 0,
-             cursorPos: 0, flag: '', searchField: '', insertField: '', query: {}};
+             cursorPos: 0, flag: '', searchField: '', insertField: '', query: {}, stage: {}};
     },
     matcher: function(flag, subtext, should_startWithSpace, acceptSpaceBar) {
       var _a, _y, match, regexp, space;
@@ -143,10 +143,10 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
             var conf = confs[i];
             switch (conf.flag) {
                 case '@':
-                    data = [{id: 1, name: 'Tom', insertField: 'name'}, {id: 2, name: 'Peter', insertField: 'name'}, {id: 3, name: 'Cherry', insertField: 'name'}];
+                    data = [{id: 1, name: 'Tom'}, {id: 2, name: 'Peter'}, {id: 3, name: 'Cherry'}];
                     break;
                 case '#':
-                    data = [{id: 1, title: 'Issue 1', insertField: 'id'}, {id: 2, title: 'Issue 2', insertField: 'id'}, {id: 3, title: 'Issue 3', insertField: 'id'}];
+                    data = [{id: 1, title: 'Issue 1'}, {id: 2, title: 'Issue 2'}, {id: 3, title: 'Issue 3'}];
                     break;
                 default:
                     break;
