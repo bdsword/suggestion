@@ -19,7 +19,7 @@ KEY_CODE = {
 var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
     getInitialState: function () {
         return {left: '0px', top: '0px', display: 'none', data: [], selectedOpt: 0,
-             cursorPos: 0, flag: '', searchField: '', insertField: '', query: {}, stage: {}};
+             cursorPos: 0, flag: '', searchField: '', insertField: '', query: {}, mentionResult: '', currentStage: 0};
     },
     matcher: function(flag, subtext, should_startWithSpace, acceptSpaceBar) {
       var _a, _y, match, regexp, space;
@@ -76,7 +76,6 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
 
     showOptBox: function () {
         if(!this.isOptBoxVisible()){
-            console.log('here');
             this.resetOptSelected();
         }
         this.setState({display: 'block'});
@@ -98,6 +97,8 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
     },
 
     filterKey: function (event) {
+        if(!event.hasOwnProperty('keyCode'))
+            return false;
         switch (event.keyCode) {
             case KEY_CODE.ESC:
                 if(!this.isOptBoxVisible()){ // because we hide option box in handleKeyDown,
@@ -136,23 +137,21 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         this.setState(offset);
         this.setState({cursorPos: pos});
 
-        var confs = [{flag: '@', searchField: 'name', insertField: 'name'}, {flag: '#', searchField: 'title', insertField: 'id'}];
+        var confs = [{
+                        flag: '@',
+                        stages: [{ searchField: 'name', insertField: 'name' }]
+                    }, {
+                        flag: '#',
+                        stages: [{searchField: 'title', insertField: 'id'}]
+                    }, {
+                        flag: '!',
+                        stages: [{searchField: 'name', insertField: 'id'}, {searchField: 'content', insertField: 'floor_id'}]
+                    }];
 
         for(var i=0 ; i<confs.length ; i++){
             var data = [];
             var conf = confs[i];
-            switch (conf.flag) {
-                case '@':
-                    data = [{id: 1, name: 'Tom'}, {id: 2, name: 'Peter'}, {id: 3, name: 'Cherry'}];
-                    break;
-                case '#':
-                    data = [{id: 1, title: 'Issue 1'}, {id: 2, title: 'Issue 2'}, {id: 3, title: 'Issue 3'}];
-                    break;
-                default:
-                    break;
-            }
 
-            data = this.arrayToDefaultHash(data);
             var source = inputorNode.val();
             startStr = source.slice(0, pos);
             query = this.matcher(conf.flag, startStr, true);
@@ -160,18 +159,29 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
                 var start = pos - query.length;
                 var end = start + query.length;
                 query = {'text': query, 'headPos': start, 'endPos': end};
+
+                var currentStage = this.state.currentStage;
+                if(conf.flag !== this.state.flag){
+                    currentStage = 0;
+                    this.resetStage();
+                }
+
+                this.setState({flag: conf.flag});
                 this.setState({query: query});
-                var result = this.filter(query.text, data, conf.searchField);
+                this.setState({stages: conf.stages});
+
+                var data = this.fakeFetchData(conf.flag, currentStage);
+                var currentStageConf = conf.stages[currentStage];
+                var result = this.filter(query.text, data, currentStageConf.searchField);
                 if(result.length > 0){
-                    this.setState({flag: conf.flag});
-                    this.setState({searchField: conf.searchField});
-                    this.setState({insertField: conf.insertField});
+                    this.setState({searchField: currentStageConf.searchField});
+                    this.setState({insertField: currentStageConf.insertField});
                     this.setState({data: result});
                     this.showOptBox();
-                    break;
                 } else {
                     this.hideOptBox();
                 }
+                break;
             } else {
                 this.hideOptBox();
             }
@@ -179,6 +189,7 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
     },
 
     handleKeyDown: function (event) {
+        console.log('key down');
         if(!this.isOptBoxVisible()){
             return;
         }
@@ -196,7 +207,7 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
             case KEY_CODE.ENTER:
                 event.preventDefault();
                 this.hideOptBox();
-                this.onChoose()
+                this.onChoose();
                 break;
             case KEY_CODE.ESC:
                 this.hideOptBox();
@@ -206,9 +217,74 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         }
     },
 
+    handleItemClick: function (event) {
+        event.preventDefault();
+        this.hideOptBox();
+        this.onChoose();
+    },
+
+    fakeFetchData: function (flag, stage) {
+        var data = [];
+        switch (flag) {
+            case '@':
+                data = [{id: 1, name: 'Tom'}, {id: 2, name: 'Peter'}, {id: 3, name: 'Cherry'}];
+                break;
+            case '#':
+                data = [{id: 1, title: 'Issue 1'}, {id: 2, title: 'Issue 2'}, {id: 3, title: 'Issue 3'}];
+                break;
+            case '!':
+                if (stage == 0) {
+                    data = [{id: 1, name: 'Channel-1'}, {id: 2, name: 'Channel-2'}, {id: 3, name: 'Channel-3'}];
+                } else if (stage == 1) {
+                    data = [{id: 1, floor_id: 1, content: 'Message-1'}, {id: 2, floor_id: 2, content: 'Message-2'}, {id: 3, floor_id: 3, content: 'Message-3'}];
+                }
+                break;
+            default:
+                break;
+        }
+        return data;
+    },
+
+    setFlagConf: function (flag) {
+        switch(flag) {
+            case '@':
+                this.setState({stages: [{url: 'http://users_url'}]});
+                break;
+            case '#':
+                this.setState({stages: [{url: 'http://issues_url'}]});
+                break;
+            case '!':
+                this.setState({stages: [{url: 'http://channels_url'}, {url: 'http://messages_url'}]});
+                break;
+        }
+    },
+
+    resetStage: function () {
+        this.setState({currentStage: 0});
+        this.setState({mentionResult: ''});
+    },
+
     onChoose: function () {
         var chooseContent = this.state.data[this.state.selectedOpt][this.state.insertField];
-        this.insertAtCursor(this.state.flag + chooseContent);
+        var newMentionResult = '';
+        if (this.state.mentionResult === '') {
+            newMentionResult = this.state.mentionResult + chooseContent;
+        } else {
+            newMentionResult = this.state.mentionResult + '-' + chooseContent;
+        }
+
+        this.setState({mentionResult: newMentionResult}, function () {
+            if (this.state.currentStage+1 < this.state.stages.length) {
+                this.resetContentAtFlag();
+                this.setState({currentStage: this.state.currentStage+1}, function () {
+                    this.handleMention({});
+                });
+                return ;
+            }
+
+            this.insertAtCursor(this.state.flag + this.state.mentionResult);
+            this.resetStage();
+        });
     },
 
     insertAtCursor: function (content) {
@@ -229,23 +305,52 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         React.findDOMNode(this.refs.inputor).dispatchEvent(event);
     },
 
+    resetContentAtFlag: function () {
+        var inputor = $(React.findDOMNode(this.refs.inputor));
+        var source = inputor.val();
+        var pos = this.state.cursorPos;
+
+        startStr = source.slice(0, Math.max(this.state.query.headPos - this.state.flag.length, 0));
+
+        var text = startStr + this.state.flag + source.slice(query.endPos || 0);
+
+        inputor.val(text);
+        inputor.caret('pos', startStr.length + this.state.flag.length);
+        React.findDOMNode(this.refs.inputor).focus();
+    },
+
     onItemHovered: function (index, event) {
         this.setState({selectedOpt: index});
+    },
+
+    handleKeyUp: function (event) {
+        console.log('key up');
+        this.handleMention(event);
+    },
+
+    handleClick: function (event) {
+        console.log('click');
+        this.handleMention(event);
+    },
+
+    handleFocus: function (event) {
+        console.log('focus');
+        this.handleMention(event);
     },
 
     render: function () {
         return (
             <div className="mentionableTextarea">
                 <textarea style={{width: '500px', height: '500px'}}
-                    onKeyUp={this.handleMention}
-                    onClick={this.handleMention}
-                    onFocus={this.handleMention}
+                    onKeyUp={this.handleKeyUp}
+                    onClick={this.handleClick}
+                    onFocus={this.handleFocus}
                     onKeyDown={this.handleKeyDown}
                     ref="inputor">
 
                 </textarea>
                 <OptionsBox conf={this.state} query={this.state.query.text} searchField={this.state.searchField}
-                    onItemClicked={this.onChoose}
+                    onItemClicked={this.handleItemClick}
                     onItemHovered={this.onItemHovered} />
             </div>
         );
