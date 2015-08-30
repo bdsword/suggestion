@@ -18,9 +18,10 @@ KEY_CODE = {
 
 var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
     getInitialState: function () {
-        return {left: '0px', top: '0px', display: 'none', data: [], selectedOpt: 0,
-             cursorPos: 0, flag: '', searchField: '', insertField: '', query: {}, mentionResult: '', currentStage: 0};
+        return {left: '0px', top: '0px', display: 'none', data: [], selectedOpt: 0, currentConf: {},
+             cursorPos: 0, flag: '', searchField: '', insertField: '', query: {}, mentionResult: '', stageChoices: [], currentStage: 0};
     },
+
     matcher: function(flag, subtext, should_startWithSpace, acceptSpaceBar) {
       var _a, _y, match, regexp, space;
       flag = flag.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
@@ -130,48 +131,50 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         }
 
         var inputorNode = $(React.findDOMNode(this.refs.inputor));
+
         var offset = inputorNode.caret('offset');
-        var pos = inputorNode.caret('pos');
-        var newState = this.state;
         delete offset.height;
         this.setState(offset);
+
+        var pos = inputorNode.caret('pos');
         this.setState({cursorPos: pos});
 
-        var confs = [{
-                        flag: '@',
-                        stages: [{ searchField: 'name', insertField: 'name' }]
-                    }, {
-                        flag: '#',
-                        stages: [{searchField: 'title', insertField: 'id'}]
-                    }, {
-                        flag: '!',
-                        stages: [{searchField: 'name', insertField: 'id'}, {searchField: 'content', insertField: 'floor_id'}]
-                    }];
-
-        for(var i=0 ; i<confs.length ; i++){
-            var data = [];
-            var conf = confs[i];
-
+        for(var i=0 ; i<this.props.configurations.targets.length ; i++){
+            var conf = this.props.configurations.targets[i];
             var source = inputorNode.val();
+
             startStr = source.slice(0, pos);
             query = this.matcher(conf.flag, startStr, true);
+
+            // if there is a query string, it means that the flag of
+            // current conf is being mentioned
             if (typeof query === "string") {
+
+                // restore where the query string start and end, so that we can replace query string
+                // with inserted string when users choose to insert
                 var start = pos - query.length;
                 var end = start + query.length;
                 query = {'text': query, 'headPos': start, 'endPos': end};
+                this.setState({query: query});
 
+                // we use local variable currentStage to pretend we have a realtime setState function
                 var currentStage = this.state.currentStage;
-                if(conf.flag !== this.state.flag){
+
+                // to prevent use choose the first stage but move the cursor to another flag therefore corrupt the component
+                if (!this.state.currentConf && conf.flag !== this.state.currentConf.flag) {
                     currentStage = 0;
                     this.resetStage();
                 }
 
-                this.setState({flag: conf.flag});
-                this.setState({query: query});
-                this.setState({stages: conf.stages});
+                // update current configuration
+                this.setState({currentConf: conf})
 
-                var data = this.fakeFetchData(conf.flag, currentStage);
+
                 var currentStageConf = conf.stages[currentStage];
+
+                // var data = this.fakeFetchData(conf.flag, currentStage);
+                var data = currentStageConf.dataFetcher(this.state.stageChoices);
+
                 var result = this.filter(query.text, data, currentStageConf.searchField);
                 if(result.length > 0){
                     this.setState({searchField: currentStageConf.searchField});
@@ -223,6 +226,10 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         this.onChoose();
     },
 
+    fetchData: function (flag, stage) {
+
+    },
+
     fakeFetchData: function (flag, stage) {
         var data = [];
         switch (flag) {
@@ -230,13 +237,13 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
                 data = [{id: 1, name: 'Tom'}, {id: 2, name: 'Peter'}, {id: 3, name: 'Cherry'}];
                 break;
             case '#':
-                data = [{id: 1, title: 'Issue 1'}, {id: 2, title: 'Issue 2'}, {id: 3, title: 'Issue 3'}];
+                data = [{sequential_id: 1, title: 'Issue 1'}, {sequential_id: 2, title: 'Issue 2'}, {sequential_id: 3, title: 'Issue 3'}];
                 break;
             case '!':
                 if (stage == 0) {
-                    data = [{id: 1, name: 'Channel-1'}, {id: 2, name: 'Channel-2'}, {id: 3, name: 'Channel-3'}];
+                    data = [{sequential_sequential_id: 1, name: 'Channel-1'}, {sequential_id: 2, name: 'Channel-2'}, {sequential_id: 3, name: 'Channel-3'}];
                 } else if (stage == 1) {
-                    data = [{id: 1, floor_id: 1, content: 'Message-1'}, {id: 2, floor_id: 2, content: 'Message-2'}, {id: 3, floor_id: 3, content: 'Message-3'}];
+                    data = [{sequential_id: 1, content: 'Message-1'}, {sequential_id: 2, content: 'Message-2'}, {sequential_id: 3, content: 'Message-3'}];
                 }
                 break;
             default:
@@ -245,26 +252,15 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         return data;
     },
 
-    setFlagConf: function (flag) {
-        switch(flag) {
-            case '@':
-                this.setState({stages: [{url: 'http://users_url'}]});
-                break;
-            case '#':
-                this.setState({stages: [{url: 'http://issues_url'}]});
-                break;
-            case '!':
-                this.setState({stages: [{url: 'http://channels_url'}, {url: 'http://messages_url'}]});
-                break;
-        }
-    },
-
     resetStage: function () {
         this.setState({currentStage: 0});
         this.setState({mentionResult: ''});
+        this.setState({stageChoices: []});
     },
 
     onChoose: function () {
+        this.setState({stageChoices: this.state.stageChoices.push(this.state.selectedOpt)});
+
         var chooseContent = this.state.data[this.state.selectedOpt][this.state.insertField];
         var newMentionResult = '';
         if (this.state.mentionResult === '') {
@@ -274,25 +270,37 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         }
 
         this.setState({mentionResult: newMentionResult}, function () {
-            if (this.state.currentStage+1 < this.state.stages.length) {
+
+            // if current stage is not the final stage, then:
+            if (this.state.currentStage+1 < this.state.currentConf.stages.length) {
+                // 1. reset the content for search
                 this.resetContentAtFlag();
+
+                // 2. increase the currentStage
                 this.setState({currentStage: this.state.currentStage+1}, function () {
+                    // call handleMention manually, because mouse click on optionBox
+                    // wouldn't triggle handleMention to fetch new data
                     this.handleMention({});
                 });
                 return ;
             }
 
-            this.insertAtCursor(this.state.flag + this.state.mentionResult);
+            this.insertAtCursor(this.state.currentConf.flag + this.state.mentionResult);
             this.resetStage();
         });
     },
 
+    /*
+    function: insert content at cursor
+    params:
+        content[string]: content to insert
+    */
     insertAtCursor: function (content) {
         var inputor = $(React.findDOMNode(this.refs.inputor));
         var source = inputor.val();
         var pos = this.state.cursorPos;
 
-        startStr = source.slice(0, Math.max(this.state.query.headPos - this.state.flag.length, 0));
+        startStr = source.slice(0, Math.max(this.state.query.headPos - this.state.currentConf.flag.length, 0));
         var suffix = " ";
         content += suffix;
         var text = startStr + content + source.slice(query.endPos || 0);
@@ -305,17 +313,20 @@ var MentionableTextarea = React.createClass({displayName: 'MentionableTextarea',
         React.findDOMNode(this.refs.inputor).dispatchEvent(event);
     },
 
+    /*
+    function: clear content between cursor and last mentioned flag
+    */
     resetContentAtFlag: function () {
         var inputor = $(React.findDOMNode(this.refs.inputor));
         var source = inputor.val();
         var pos = this.state.cursorPos;
 
-        startStr = source.slice(0, Math.max(this.state.query.headPos - this.state.flag.length, 0));
+        startStr = source.slice(0, Math.max(this.state.query.headPos - this.state.currentConf.flag.length, 0));
 
-        var text = startStr + this.state.flag + source.slice(query.endPos || 0);
+        var text = startStr + this.state.currentConf.flag + source.slice(query.endPos || 0);
 
         inputor.val(text);
-        inputor.caret('pos', startStr.length + this.state.flag.length);
+        inputor.caret('pos', startStr.length + this.state.currentConf.flag.length);
         React.findDOMNode(this.refs.inputor).focus();
     },
 

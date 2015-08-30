@@ -16,8 +16,38 @@
     <script type="text/jsx" src="components/OptionsBox.jsx"></script>
 
     <script type="text/jsx">
+        var configurations = {
+            mode: 'static',
+            targets: [
+                {
+                    flag: '@',
+                    stages: [
+                        { searchField: 'name', insertField: 'name', dataFetcher: function (stageChoices) {
+                            return [{name: 'Tomm'}, {name: 'Petter'}, {name: 'fucker'}];
+                        } }
+                    ]
+                }, {
+                    flag: '#',
+                    stages: [
+                        { searchField: 'title', insertField: 'sequential_id', dataFetcher: function (stageChoices) {
+                            return [{sequential_id: 1, title: 'TestQQQ'}, {sequential_id: 2, title: 'TTTRR'}];
+                        } }
+                    ]
+                }, {
+                    flag: '!',
+                    stages: [
+                        { searchField: 'name', insertField: 'sequential_id', dataFetcher: function (stageChoices) {
+                            return [];
+                        } },
+                        { searchField: 'content', insertField: 'sequential_id', dataFetcher: function (stageChoices) {
+                            return [];
+                        } }
+                    ]
+                }
+            ]
+        };
         React.render(
-          <MentionableTextarea />,
+          <MentionableTextarea configurations={configurations} />,
           document.getElementById('content')
         );
     </script>
